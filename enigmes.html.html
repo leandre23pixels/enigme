@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+<meta charset="UTF-8">
+<title>Le défi des 15 énigmes</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+text-align:center;
+}
+
+.container{
+background:rgba(0,0,0,0.6);
+padding:40px;
+border-radius:15px;
+width:600px;
+box-shadow:0 0 30px rgba(0,0,0,0.8);
+animation:fade 1s;
+}
+
+h1{
+color:#00eaff;
+}
+
+input{
+padding:10px;
+width:80%;
+border:none;
+border-radius:8px;
+margin-top:20px;
+font-size:16px;
+}
+
+button{
+margin-top:20px;
+padding:12px 30px;
+border:none;
+border-radius:10px;
+background:#00eaff;
+color:black;
+font-size:16px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+transform:scale(1.05);
+}
+
+#result{
+margin-top:20px;
+font-size:18px;
+}
+
+#continueBtn{
+display:none;
+margin-top:20px;
+}
+
+@keyframes fade{
+from{opacity:0; transform:translateY(20px);}
+to{opacity:1; transform:translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1 id="titre">Le défi des 15 énigmes</h1>
+
+<p id="question">
+15 énigmes.<br>
+15 codes.<br><br>
+Toutes les réponses doivent être écrites<br>
+<b>en minuscule et sans espace.</b>
+</p>
+
+<input id="rep" placeholder="ta réponse">
+<br>
+<button id="validerBtn" onclick="check()">Valider</button>
+<button id="continueBtn" onclick="suivant()">Continuer</button>
+<p id="result"></p>
+</div>
+
+<script>
+let enigmes = [
+{q:"Je parle sans bouche et j'entends sans oreilles. Qui suis-je ?", r:"echo", code:"UXH"},
+{q:"Je peux remplir une pièce mais je ne prends aucune place.", r:"lumiere", code:"GH"},
+{q:"Plus on m’en prend, plus je grandis.", r:"trou", code:"OD"},
+{q:"J’ai des villes mais pas de maisons, des rivières mais pas d’eau.", r:"carte", code:"SD"},
+{q:"Je monte et je descends mais je ne bouge jamais.", r:"escalier", code:"PD"},
+{q:"Je suis invisible mais tu peux me sentir. Je peux déplacer les feuilles et les bateaux.", r:"vent", code:"KQV"},
+{q:"Je suis léger comme une plume mais le plus fort ne peut me tenir plus de quelques minutes.", r:"souffle", code:"ZRM"},
+{q:"Je peux te parler mais n’ai ni bouche ni oreilles. Je répète ce que tu dis.", r:"echochamber", code:"XVHQLF"},
+{q:"Je grandis mais ne vis pas. J’ai des anneaux mais je ne bois pas.", r:"arbre", code:"DFUEH"},
+{q:"Plus je sèche, plus je deviens humide.", r:"serviette", code:"VYHNUHWWH"},
+{q:"Je traverse les villes et les champs mais reste toujours en place.", r:"route", code:"URXWH"},
+{q:"Je peux être brisé mais jamais tenu.", r:"silence", code:"VLOHQFH"},
+{q:"Je suis partout mais invisible, sans forme, je peux faire tomber la pluie.", r:"nuage", code:"QXDJH"},
+{q:"Je commence la nuit et finis le matin, je suis aussi dans l'année et dans la semaine.", r:"nuit", code:"QXLF"},
+{q:"Dernière énigme ! Un empereur romain protégeait ses messages avec un décalage. Quel est son nom ?", r:"cesar", code:"CLÉ"}
+]
+
+let niveau = -1
+let timestamps = JSON.parse(localStorage.getItem('timestamps') || '[]')
+let blockedUntil = parseInt(localStorage.getItem('blockedUntil') || '0')
+
+function check(){
+let now = Date.now()
+
+// Vérification si blocage actif
+if(now < blockedUntil){
+let diff = Math.ceil((blockedUntil - now)/(1000*60))
+document.getElementById("result").innerHTML = "⏱ Trop rapide ! Réessaie dans "+diff+" minutes."
+return
+}
+
+let rep = document.getElementById("rep").value.toLowerCase()
+
+// Commencer le jeu
+if(niveau == -1){
+niveau = 0
+document.getElementById("question").innerHTML = enigmes[0].q
+document.getElementById("rep").value = ""
+return
+}
+
+// Dernière énigme finale
+if(niveau === "final"){
+if(rep == "cesar"){
+document.getElementById("question").innerHTML =
+"✔ Correct.<br><br>Décale chaque lettre des codes de -3.<br><br>" +
+"L'adresse révélée est :<br><br>" +
+"<h2>22 chemin Verdoc</h2>"
+document.getElementById("rep").style.display="none"
+document.getElementById("validerBtn").style.display="none"
+document.getElementById("continueBtn").style.display="none"
+}else{
+document.getElementById("result").innerHTML="❌ Mauvaise réponse"
+}
+return
+}
+
+// Vérification des réponses normales
+if(rep == enigmes[niveau].r){
+
+// Ajouter timestamp
+timestamps.push(now)
+localStorage.setItem('timestamps', JSON.stringify(timestamps))
+
+// Vérifier si les 3 dernières énigmes sont trop rapides (<1h)
+if(timestamps.length >=3){
+let last3 = timestamps.slice(-3)
+let diff = last3[2] - last3[0] // millisecondes entre la première et la troisième
+if(diff < 1000*60*60){ // moins d'une heure
+blockedUntil = now + 3*60*60*1000 // 3h de blocage
+localStorage.setItem('blockedUntil', blockedUntil)
+document.getElementById("result").innerHTML = "🚫 Trop rapide ! Tu es bloqué 3 heures."
+return
+}
+}
+
+// Afficher le code et bouton Continuer
+document.getElementById("result").innerHTML =
+"✔ Correct ! Code obtenu : "+enigmes[niveau].code
+document.getElementById("validerBtn").style.display="none"
+document.getElementById("continueBtn").style.display="inline-block"
+
+}else{
+document.getElementById("result").innerHTML = "❌ Mauvaise réponse"
+}
+}
+
+// Fonction pour passer à l'énigme suivante
+function suivant(){
+document.getElementById("continueBtn").style.display="none"
+document.getElementById("validerBtn").style.display="inline-block"
+document.getElementById("rep").value=""
+document.getElementById("result").innerHTML=""
+
+if(niveau < enigmes.length -1){
+niveau++
+document.getElementById("question").innerHTML = enigmes[niveau].q
+}else{
+niveau = "final"
+document.getElementById("question").innerHTML = enigmes[niveau].q
+}
+}
+</script>
+</body>
+</html>
